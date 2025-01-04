@@ -7,6 +7,7 @@ services:
       - key: ANTHROPIC_API_KEY
         sync: false
     healthCheckPath: /health
+    healthCheckTimeout: 2400
     buildCommand: docker build -t transcript-chat-backend -f Dockerfile.backend .
 
   - type: web
