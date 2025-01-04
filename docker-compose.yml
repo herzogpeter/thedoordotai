@@ -10,17 +10,8 @@ services:
       - "10000:10000"
     env_file:
       - .env
-    volumes:
-      - ./transcripts:/app/transcripts
-      - ./storage:/app/storage
     networks:
       - app-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:10000/health"]
-      interval: 30s
-      timeout: 30s
-      retries: 5
-      start_period: 60s
 
   frontend:
     build:
@@ -34,12 +25,8 @@ services:
     networks:
       - app-network
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
 
 networks:
   app-network:
     driver: bridge
-
-volumes:
-  storage:

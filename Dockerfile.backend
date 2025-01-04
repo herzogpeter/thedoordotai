@@ -20,10 +20,14 @@ COPY transcripts/ ./transcripts/
 # Create storage directory
 RUN mkdir -p ./storage
 
-# Build the index during build phase
-RUN python build_index.py
-# Check for the docstore.json file which should exist if index was built successfully
-RUN test -f "index.json/docstore.json" || (echo "Index build failed - docstore.json not found" && exit 1)
+# Build the index during build phase and verify
+RUN echo "Starting index build..." && \
+    python build_index.py && \
+    echo "Verifying index files..." && \
+    ls -la index.json/ && \
+    test -f "index.json/docstore.json" && \
+    test -f "index.json/vector_store.json" && \
+    echo "Index build and verification successful"
 
 # Set environment variables
 ENV PORT=10000
