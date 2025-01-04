@@ -4,5 +4,5 @@ python-dotenv==1.0.1
 llama-index-core==0.10.11
 llama-index-llms-anthropic==0.1.6
 llama-index-embeddings-huggingface==0.4.0
-anthropic==0.18.1
+anthropic==0.20.0
 sentence-transformers==2.5.1
