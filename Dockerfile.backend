@@ -1,4 +1,27 @@
-# Use Python slim image for smaller size
+# Build stage for index generation
+FROM python:3.9-slim as builder
+
+# Set working directory
+WORKDIR /build
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy only what's needed for index building
+COPY build_index.py .
+COPY transcripts/ ./transcripts/
+
+# Build the index
+RUN echo "Starting index build..." && \
+    python build_index.py && \
+    echo "Verifying index files..." && \
+    ls -la index.json/ && \
+    test -f "index.json/docstore.json" && \
+    test -f "index.json/vector_store.json" && \
+    echo "Index build and verification successful"
+
+# Final stage
 FROM python:3.9-slim
 
 # Set working directory
@@ -7,27 +30,15 @@ WORKDIR /app
 # Install curl for healthcheck
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
+# Copy requirements and install dependencies
 COPY requirements.txt .
-
-# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code and build script
-COPY main.py build_index.py ./
-COPY transcripts/ ./transcripts/
+# Copy application code
+COPY main.py .
 
-# Create storage directory
-RUN mkdir -p ./storage
-
-# Build the index during build phase and verify
-RUN echo "Starting index build..." && \
-    python build_index.py && \
-    echo "Verifying index files..." && \
-    ls -la index.json/ && \
-    test -f "index.json/docstore.json" && \
-    test -f "index.json/vector_store.json" && \
-    echo "Index build and verification successful"
+# Copy the built index from builder stage
+COPY --from=builder /build/index.json /app/index.json
 
 # Set environment variables
 ENV PORT=10000
@@ -37,5 +48,5 @@ ENV INDEX_PATH=index.json
 # Expose the port
 EXPOSE ${PORT}
 
-# Command to run the application with dynamic port
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT} --log-level info
+# Command to run the application
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT} --log-level debug

@@ -12,6 +12,7 @@ services:
       - .env
     networks:
       - app-network
+    restart: "no"
 
   frontend:
     build:
