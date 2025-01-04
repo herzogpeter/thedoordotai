@@ -52,8 +52,33 @@ if prompt := st.chat_input("Ask a question about your transcripts"):
                     st.error("No transcripts are loaded. Please add transcript files to the /transcripts directory and restart the application.")
                 else:
                     response.raise_for_status()
-                    answer = response.json()["response"]
+                    data = response.json()
+                    answer = data["response"]
                     st.write(answer)
+                    
+                    # Display sources if available
+                    if "sources" in data and data["sources"]:
+                        with st.expander("📚 Source Snippets"):
+                            st.markdown("These are the relevant excerpts from the transcripts that informed the response:")
+                            for i, source in enumerate(data["sources"], 1):
+                                with st.container():
+                                    # Header with relevance score
+                                    st.markdown(f"**Source {i}** *(Relevance: {source['score']:.2f})*")
+                                    
+                                    # Source text in a quote block
+                                    st.markdown("> " + source['text'].replace("\n", "\n> "))
+                                    
+                                    # Metadata in a cleaner format
+                                    if source['metadata']:
+                                        metadata_str = " | ".join([
+                                            f"**{key}**: {value}" 
+                                            for key, value in source['metadata'].items()
+                                        ])
+                                        st.markdown(metadata_str)
+                                    
+                                    # Add space between sources
+                                    st.divider()
+                    
                     st.session_state.messages.append({"role": "assistant", "content": answer})
     except requests.exceptions.ConnectionError as e:
         st.error(f"Cannot connect to the backend at {BACKEND_URL}. Error: {str(e)}")

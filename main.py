@@ -82,10 +82,27 @@ async def chat(message: ChatMessage):
     
     try:
         logger.info(f"Processing chat message: {message.message[:50]}...")
-        query_engine = index.as_query_engine()
+        query_engine = index.as_query_engine(
+            response_mode="tree_summarize",
+            retrieve_source_nodes=True,
+            similarity_top_k=3  # Retrieve more source nodes for better context
+        )
         response = query_engine.query(message.message)
         logger.info("Successfully generated response")
-        return {"response": str(response)}
+        
+        # Format response with source information
+        sources = []
+        for node in response.source_nodes:
+            sources.append({
+                "text": node.node.text,  # Changed from node.source_text to node.node.text
+                "score": float(node.score),
+                "metadata": node.node.metadata
+            })
+        
+        return {
+            "response": str(response),
+            "sources": sorted(sources, key=lambda x: x["score"], reverse=True)
+        }
     except Exception as e:
         logger.error(f"Error processing chat: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
