@@ -38,6 +38,7 @@ app.add_middleware(
 # Global variables
 index = None
 chat_engine = None
+is_initializing = False
 
 class Message(BaseModel):
     role: str
@@ -50,9 +51,10 @@ class ChatMessage(BaseModel):
 @app.on_event("startup")
 async def startup_event():
     """Initialize the index and chat engine on startup if transcripts are available"""
-    global index, chat_engine
+    global index, chat_engine, is_initializing
     try:
         logger.info("Starting initialization...")
+        is_initializing = True
         if os.path.exists("transcripts") and any(os.scandir("transcripts")):
             logger.info("Loading transcripts...")
             documents = SimpleDirectoryReader("transcripts").load_data()
@@ -76,10 +78,12 @@ async def startup_event():
             logger.info("Successfully loaded and indexed transcripts")
         else:
             logger.warning("No transcripts found in /transcripts directory")
+        is_initializing = False
     except Exception as e:
         logger.error(f"Error initializing index: {str(e)}")
         import traceback
         logger.error(traceback.format_exc())
+        is_initializing = False
 
 @app.get("/")
 async def root():
@@ -90,7 +94,12 @@ async def root():
 async def health_check():
     """Health check endpoint"""
     logger.info("Health check called")
-    return {"status": "healthy", "index_loaded": index is not None}
+    if is_initializing:
+        return {"status": "initializing", "message": "Loading and indexing transcripts"}
+    elif chat_engine is not None:
+        return {"status": "healthy", "index_loaded": True}
+    else:
+        return {"status": "unhealthy", "message": "Index not loaded", "index_loaded": False}
 
 @app.post("/chat")
 async def chat(message: ChatMessage):

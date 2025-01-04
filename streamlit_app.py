@@ -22,7 +22,26 @@ def send_message(message: str, history: List[Dict[str, str]]) -> dict:
         st.error(f"Error communicating with backend: {str(e)}")
         return None
 
+def check_backend_health() -> bool:
+    """Check if backend is healthy"""
+    backend_url = os.getenv("BACKEND_URL", "http://backend:10000")
+    try:
+        response = requests.get(f"{backend_url}/health", timeout=5)
+        return response.status_code == 200 and response.json().get("index_loaded", False)
+    except requests.exceptions.RequestException:
+        return False
+
 st.title("Sermon Transcript Chat")
+
+# Add status to sidebar
+with st.sidebar:
+    st.title("Status")
+    if check_backend_health():
+        st.success("Backend Connected")
+        st.info("Ready to answer questions")
+    else:
+        st.error("Backend Disconnected")
+        st.warning("Please wait for the backend to initialize")
 
 # Display chat messages
 for message in st.session_state.messages:
