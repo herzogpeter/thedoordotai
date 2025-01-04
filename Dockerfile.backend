@@ -16,7 +16,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY main.py .
 COPY transcripts/ ./transcripts/
-COPY storage/ ./storage/
+
+# Create storage directory
+RUN mkdir -p ./storage
 
 # Expose the port (will be overridden by PORT env var)
 EXPOSE 8000

@@ -31,7 +31,8 @@ venv/
 !.env.*.template
 
 # Storage
-storage/
+storage/*
+!storage/.gitkeep
 
 # IDE
 .idea/
