@@ -3,18 +3,24 @@ services:
     name: transcript-chat-backend
     env: docker
     dockerfilePath: ./Dockerfile.backend
-    envVars:
-      - key: ANTHROPIC_API_KEY
-        sync: false
+    dockerContext: .
     healthCheckPath: /health
-    healthCheckTimeout: 2400
-    buildCommand: docker build -t transcript-chat-backend -f Dockerfile.backend .
+    healthCheckTimeout: 1800
+    startCommand: /app/start.sh
+    envVars:
+      - key: PORT
+        value: 10000
 
   - type: web
     name: transcript-chat-frontend
     env: docker
     dockerfilePath: ./Dockerfile.frontend
+    dockerContext: .
     envVars:
+      - key: PORT
+        value: 8501
       - key: BACKEND_URL
-        value: https://transcript-chat-backend.onrender.com
-    buildCommand: docker build -t transcript-chat-frontend -f Dockerfile.frontend . 
+        fromService:
+          name: transcript-chat-backend
+          type: web
+          property: host 
