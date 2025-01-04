@@ -6,7 +6,6 @@ services:
     dockerContext: .
     healthCheckPath: /health
     healthCheckTimeout: 1800
-    startCommand: /app/start.sh
     envVars:
       - key: PORT
         value: 10000

@@ -10,28 +10,22 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy application code and build script
 COPY main.py build_index.py ./
 COPY transcripts/ ./transcripts/
 
-# Create directory for index
-RUN mkdir -p index.json
+# Build the index during build phase
+RUN echo "Starting index build..." && \
+    python build_index.py && \
+    echo "Index build complete"
 
 # Set environment variables
 ENV PORT=10000
 ENV PYTHONUNBUFFERED=1
 ENV INDEX_PATH=index.json
 
-# Create startup script
-RUN echo '#!/bin/bash\n\
-echo "Starting index build..."\n\
-python build_index.py\n\
-echo "Index build complete, starting server..."\n\
-exec uvicorn main:app --host 0.0.0.0 --port ${PORT} --log-level debug\n\
-' > /app/start.sh && chmod +x /app/start.sh
-
 # Expose the port
 EXPOSE ${PORT}
 
 # Command to run the application
-CMD ["/app/start.sh"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "10000", "--log-level", "debug"]
