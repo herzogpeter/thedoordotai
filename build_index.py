@@ -22,8 +22,9 @@ def build_and_save_index(transcripts_dir: str = "transcripts", output_path: str 
         logger.info("Starting index build process...")
         
         # Initialize settings
+        embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
+        Settings.embed_model = embed_model
         Settings.llm = Anthropic(model="claude-3-5-sonnet-20241022")
-        Settings.embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
         
         # Verify transcripts directory exists and has files
         if not os.path.exists(transcripts_dir):
@@ -57,9 +58,13 @@ def build_and_save_index(transcripts_dir: str = "transcripts", output_path: str 
         index_size = sum(f.stat().st_size for f in Path(output_path).rglob('*') if f.is_file())
         logger.info(f"Index saved successfully. Size: {index_size / 1024 / 1024:.2f} MB")
         
-        # Test load index
+        # Test load index without regenerating embeddings
         logger.info("Testing index load...")
-        test_load = VectorStoreIndex.load_from_disk(output_path)
+        storage_context = StorageContext.from_defaults(vector_store=SimpleVectorStore(), persist_dir=output_path)
+        test_load = VectorStoreIndex.init_from_vector_store(
+            vector_store=storage_context.vector_store,
+            embed_model=embed_model
+        )
         logger.info("Index load test successful")
         
         return True
