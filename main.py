@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, Settings
 from llama_index.core.storage.storage_context import StorageContext
 from llama_index.core.vector_stores import SimpleVectorStore
-from llama_index.llms.anthropic import Anthropic
+from anthropic import Anthropic
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
 # Configure logging
@@ -18,8 +18,11 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 logger.info(f"Starting application on port {os.getenv('PORT', '10000')}")
 
+# Initialize Anthropic client
+anthropic_client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+
 # Initialize settings
-Settings.llm = Anthropic(model="claude-3-5-sonnet-20241022")
+Settings.llm = anthropic_client
 Settings.embed_model = HuggingFaceEmbedding(model_name="all-MiniLM-L6-v2")
 
 app = FastAPI()
