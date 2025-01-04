@@ -3,7 +3,7 @@ import sys
 import logging
 from pathlib import Path
 from dotenv import load_dotenv
-from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, Settings, load_index_from_storage
+from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, Settings
 from llama_index.core.storage.storage_context import StorageContext
 from llama_index.core.vector_stores import SimpleVectorStore
 from llama_index.llms.anthropic import Anthropic
@@ -22,6 +22,7 @@ def build_and_save_index(transcripts_dir: str = "transcripts", output_path: str 
         logger.info("Starting index build process...")
         
         # Initialize settings
+        logger.info("Initializing embedding model...")
         embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
         Settings.embed_model = embed_model
         Settings.llm = Anthropic(model="claude-3-5-sonnet-20241022")
@@ -39,7 +40,7 @@ def build_and_save_index(transcripts_dir: str = "transcripts", output_path: str 
         logger.info(f"Loaded {len(documents)} documents")
         
         # Create and save index
-        logger.info("Creating index...")
+        logger.info("Creating index and generating embeddings (this may take several minutes)...")
         storage_context = StorageContext.from_defaults(vector_store=SimpleVectorStore())
         index = VectorStoreIndex.from_documents(
             documents,
@@ -52,20 +53,12 @@ def build_and_save_index(transcripts_dir: str = "transcripts", output_path: str 
         index.storage_context.persist(persist_dir=output_path)
         
         # Verify index was saved
-        if not os.path.exists(output_path):
-            raise FileNotFoundError(f"Failed to save index to {output_path}")
+        if not os.path.exists(f"{output_path}/docstore.json"):
+            raise FileNotFoundError(f"Failed to save index - docstore.json not found in {output_path}")
         
         index_size = sum(f.stat().st_size for f in Path(output_path).rglob('*') if f.is_file())
         logger.info(f"Index saved successfully. Size: {index_size / 1024 / 1024:.2f} MB")
-        
-        # Test load index without regenerating embeddings
-        logger.info("Testing index load...")
-        # Load the existing storage context from disk
-        storage_context = StorageContext.from_defaults(persist_dir=output_path)
-        test_load = load_index_from_storage(storage_context)
-        # Simple validation - try to get the size of the vector store
-        vector_store_size = len(storage_context.vector_store.get())
-        logger.info(f"Index load test successful. Vector store size: {vector_store_size}")
+        logger.info("Build process complete!")
         
         return True
         

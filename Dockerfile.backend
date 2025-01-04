@@ -22,7 +22,8 @@ RUN mkdir -p ./storage
 
 # Build the index during build phase
 RUN python build_index.py
-RUN if [ ! -d "index.json" ]; then echo "Index build failed" && exit 1; fi
+# Check for the docstore.json file which should exist if index was built successfully
+RUN test -f "index.json/docstore.json" || (echo "Index build failed - docstore.json not found" && exit 1)
 
 # Set environment variables
 ENV PORT=10000
