@@ -13,16 +13,21 @@ COPY requirements.txt .
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY main.py .
+# Copy application code and build script
+COPY main.py build_index.py ./
 COPY transcripts/ ./transcripts/
 
 # Create storage directory
 RUN mkdir -p ./storage
 
+# Build the index during build phase
+RUN python build_index.py
+RUN if [ ! -d "index.json" ]; then echo "Index build failed" && exit 1; fi
+
 # Set environment variables
 ENV PORT=10000
 ENV PYTHONUNBUFFERED=1
+ENV INDEX_PATH=index.json
 
 # Expose the port
 EXPOSE ${PORT}

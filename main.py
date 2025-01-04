@@ -41,18 +41,37 @@ class ChatMessage(BaseModel):
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize the index on startup if transcripts are available"""
+    """Initialize the index on startup"""
     global index
     try:
         logger.info("Starting initialization...")
+        index_path = os.getenv("INDEX_PATH", "index.json")
+        force_rebuild = os.getenv("FORCE_INDEX_REBUILD", "").lower() == "true"
+
+        if os.path.exists(index_path) and not force_rebuild:
+            logger.info(f"Loading pre-built index from {index_path}...")
+            try:
+                index = VectorStoreIndex.load_from_disk(index_path)
+                logger.info("Successfully loaded pre-built index")
+                return
+            except Exception as e:
+                logger.error(f"Error loading pre-built index: {str(e)}")
+                logger.info("Falling back to building index...")
+
+        # Fallback: Build index if pre-built index not found or force rebuild
         if os.path.exists("transcripts") and any(os.scandir("transcripts")):
-            logger.info("Loading transcripts...")
+            logger.info("Building index from transcripts...")
             documents = SimpleDirectoryReader("transcripts").load_data()
             logger.info(f"Loaded {len(documents)} documents")
-            logger.info("Creating index...")
             storage_context = StorageContext.from_defaults(vector_store=SimpleVectorStore())
             index = VectorStoreIndex.from_documents(documents, storage_context=storage_context)
-            logger.info("Successfully loaded and indexed transcripts")
+            logger.info("Successfully built index")
+
+            # Save the newly built index if we're in development
+            if force_rebuild:
+                logger.info(f"Saving newly built index to {index_path}...")
+                index.storage_context.persist(persist_dir=index_path)
+                logger.info("Index saved successfully")
         else:
             logger.warning("No transcripts found in /transcripts directory")
     except Exception as e:
