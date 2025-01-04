@@ -3,7 +3,7 @@ import sys
 import logging
 from pathlib import Path
 from dotenv import load_dotenv
-from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, Settings
+from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, Settings, load_index_from_storage
 from llama_index.core.storage.storage_context import StorageContext
 from llama_index.core.vector_stores import SimpleVectorStore
 from llama_index.llms.anthropic import Anthropic
@@ -60,12 +60,12 @@ def build_and_save_index(transcripts_dir: str = "transcripts", output_path: str 
         
         # Test load index without regenerating embeddings
         logger.info("Testing index load...")
-        storage_context = StorageContext.from_defaults(vector_store=SimpleVectorStore(), persist_dir=output_path)
-        test_load = VectorStoreIndex.init_from_vector_store(
-            vector_store=storage_context.vector_store,
-            embed_model=embed_model
-        )
-        logger.info("Index load test successful")
+        # Load the existing storage context from disk
+        storage_context = StorageContext.from_defaults(persist_dir=output_path)
+        test_load = load_index_from_storage(storage_context)
+        # Simple validation - try to get the size of the vector store
+        vector_store_size = len(storage_context.vector_store.get())
+        logger.info(f"Index load test successful. Vector store size: {vector_store_size}")
         
         return True
         
