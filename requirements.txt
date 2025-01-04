@@ -2,7 +2,8 @@ fastapi==0.109.2
 uvicorn==0.27.1
 python-dotenv==1.0.1
 llama-index-core
+llama-index-llms-anthropic
 llama-index-embeddings-huggingface
 llama-index-readers-file
-anthropic==0.42.0
+anthropic
 sentence-transformers==2.6.1

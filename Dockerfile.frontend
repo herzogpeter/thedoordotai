@@ -8,7 +8,8 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install streamlit
 
 # Copy application code
 COPY streamlit_app.py .
