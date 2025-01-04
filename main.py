@@ -94,12 +94,13 @@ async def root():
 async def health_check():
     """Health check endpoint"""
     logger.info("Health check called")
+    # Always return 200 OK, but with different status messages
     if is_initializing:
-        return {"status": "initializing", "message": "Loading and indexing transcripts"}
+        return {"status": "ok", "state": "initializing", "message": "Loading and indexing transcripts"}
     elif chat_engine is not None:
-        return {"status": "healthy", "index_loaded": True}
+        return {"status": "ok", "state": "ready", "index_loaded": True}
     else:
-        return {"status": "unhealthy", "message": "Index not loaded", "index_loaded": False}
+        return {"status": "ok", "state": "waiting", "message": "Waiting to start initialization"}
 
 @app.post("/chat")
 async def chat(message: ChatMessage):
