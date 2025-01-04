@@ -20,11 +20,12 @@ COPY transcripts/ ./transcripts/
 # Create storage directory
 RUN mkdir -p ./storage
 
-# Set default port (will be overridden by Render's PORT env var)
+# Set environment variables
 ENV PORT=10000
+ENV PYTHONUNBUFFERED=1
 
 # Expose the port
 EXPOSE ${PORT}
 
 # Command to run the application with dynamic port
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT}
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT} --log-level info
