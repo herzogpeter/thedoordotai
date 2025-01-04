@@ -23,7 +23,7 @@ anthropic_client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
 # Initialize settings
 Settings.llm = anthropic_client
-Settings.embed_model = HuggingFaceEmbedding(model_name="all-MiniLM-L6-v2")
+Settings.embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 app = FastAPI()
 
