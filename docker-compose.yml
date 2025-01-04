@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile.backend
     container_name: transcript-chat-backend
     ports:
-      - "8000:8000"
+      - "10000:10000"
     env_file:
       - .env
     volumes:
@@ -30,7 +30,7 @@ services:
     ports:
       - "8501:8501"
     environment:
-      - BACKEND_URL=http://backend:8000
+      - BACKEND_URL=http://backend:10000
     networks:
       - app-network
     depends_on:
