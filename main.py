@@ -1,12 +1,14 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import List
 import os
 import logging
 from dotenv import load_dotenv
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, Settings
 from llama_index.core.storage.storage_context import StorageContext
 from llama_index.core.vector_stores import SimpleVectorStore
+from llama_index.core.memory import ChatMemoryBuffer
 from llama_index.llms.anthropic import Anthropic
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
@@ -33,16 +35,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global variable for the index
+# Global variables
 index = None
+chat_engine = None
+
+class Message(BaseModel):
+    role: str
+    content: str
 
 class ChatMessage(BaseModel):
     message: str
+    history: List[Message] = []
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize the index on startup if transcripts are available"""
-    global index
+    """Initialize the index and chat engine on startup if transcripts are available"""
+    global index, chat_engine
     try:
         logger.info("Starting initialization...")
         if os.path.exists("transcripts") and any(os.scandir("transcripts")):
@@ -52,6 +60,19 @@ async def startup_event():
             logger.info("Creating index...")
             storage_context = StorageContext.from_defaults(vector_store=SimpleVectorStore())
             index = VectorStoreIndex.from_documents(documents, storage_context=storage_context)
+            
+            # Initialize chat engine with memory
+            memory = ChatMemoryBuffer.from_defaults(token_limit=3900)
+            chat_engine = index.as_chat_engine(
+                chat_mode="context",
+                memory=memory,
+                similarity_top_k=3,
+                system_prompt=(
+                    "You are a helpful AI assistant that answers questions about sermon transcripts. "
+                    "Use the provided context to answer questions accurately and concisely. "
+                    "If you're not sure about something, say so."
+                )
+            )
             logger.info("Successfully loaded and indexed transcripts")
         else:
             logger.warning("No transcripts found in /transcripts directory")
@@ -74,30 +95,34 @@ async def health_check():
 @app.post("/chat")
 async def chat(message: ChatMessage):
     """Chat with the loaded transcripts"""
-    global index
+    global chat_engine
     
-    if not index:
+    if not chat_engine:
         logger.error("No transcripts loaded")
         raise HTTPException(status_code=400, detail="No transcripts loaded")
     
     try:
         logger.info(f"Processing chat message: {message.message[:50]}...")
-        query_engine = index.as_query_engine(
-            response_mode="tree_summarize",
-            retrieve_source_nodes=True,
-            similarity_top_k=3  # Retrieve more source nodes for better context
-        )
-        response = query_engine.query(message.message)
+        
+        # Reset chat engine memory with conversation history
+        chat_engine.reset()
+        for msg in message.history[:-1]:  # Exclude the latest message as we'll send it separately
+            if msg.role == "user":
+                chat_engine.chat(msg.content)
+        
+        # Get response for the current message
+        response = chat_engine.chat(message.message)
         logger.info("Successfully generated response")
         
         # Format response with source information
         sources = []
-        for node in response.source_nodes:
-            sources.append({
-                "text": node.node.text,  # Changed from node.source_text to node.node.text
-                "score": float(node.score),
-                "metadata": node.node.metadata
-            })
+        if hasattr(response, 'source_nodes'):
+            for node in response.source_nodes:
+                sources.append({
+                    "text": node.node.text,
+                    "score": float(node.score),
+                    "metadata": node.node.metadata
+                })
         
         return {
             "response": str(response),
