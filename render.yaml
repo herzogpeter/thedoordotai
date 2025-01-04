@@ -6,6 +6,9 @@ services:
     envVars:
       - key: ANTHROPIC_API_KEY
         sync: false
+      - key: PORT
+        value: "10000"
+    port: 10000
     healthCheckPath: /health
     healthCheckTimeout: 2400
     buildCommand: docker build -t transcript-chat-backend -f Dockerfile.backend .
