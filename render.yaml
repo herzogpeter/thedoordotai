@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: transcript-chat-backend
+    env: docker
+    dockerfilePath: ./Dockerfile.backend
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+    healthCheckPath: /health
+    buildCommand: docker build -t transcript-chat-backend -f Dockerfile.backend .
+    startCommand: docker run -p 8000:8000 transcript-chat-backend
+
+  - type: web
+    name: transcript-chat-frontend
+    env: docker
+    dockerfilePath: ./Dockerfile.frontend
+    envVars:
+      - key: BACKEND_URL
+        value: https://transcript-chat-backend.onrender.com
+    buildCommand: docker build -t transcript-chat-frontend -f Dockerfile.frontend .
+    startCommand: docker run -p 8501:8501 transcript-chat-frontend 

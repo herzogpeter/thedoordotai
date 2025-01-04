@@ -1,0 +1,20 @@
+# Use Python slim image for smaller size
+FROM python:3.9-slim
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY streamlit_app.py .
+
+# Expose the port (will be overridden by PORT env var)
+EXPOSE 8501
+
+# Command to run the application with dynamic port
+CMD streamlit run streamlit_app.py --server.port $PORT --server.address 0.0.0.0

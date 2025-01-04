@@ -1,0 +1,13 @@
+This is a sample transcript.
+
+The purpose of this file is to ensure that the application has at least one transcript to load during initialization.
+
+You can replace this file with your actual transcripts later.
+
+Topics covered in this sample:
+- Introduction to the topic
+- Key concepts
+- Example scenarios
+- Practical applications
+
+This file serves as a placeholder and should be replaced with real content for production use. 
