@@ -41,3 +41,8 @@ storage/
 
 # Python version management
 .python-version 
+
+# Code combination files
+combine_code.py
+combined_code_*.py
+combined_code_*.txt 
