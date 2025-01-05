@@ -63,12 +63,17 @@ async def startup_event():
 
         # Initialize chat engine with Anthropic
         logger.info("Initializing chat engine...")
-        llm = Anthropic(model="claude-3-5-sonnet-20241022")
+        llm = Anthropic(model="claude-3-5-sonnet-20241022", temperature=0.7)
         logger.info(f"Initialized LLM with model: {llm.model}")
         chat_engine = index.as_chat_engine(
             chat_mode="condense_plus_context",
             llm=llm,
             verbose=True,
+            system_prompt=(
+                "You are a helpful AI assistant that answers questions about sermon transcripts. "
+                "Use the provided context to answer questions accurately and concisely. "
+                "If you're not sure about something, say so."
+            )
         )
         logger.info("Chat engine initialized successfully")
 
@@ -93,10 +98,20 @@ async def chat(request: ChatRequest):
         logger.info(f"Raw response type: {type(response)}")
         logger.info(f"Raw response: {response}")
         
-        # Extract the response content
-        response_text = response.response if hasattr(response, 'response') else str(response)
+        # Extract the response content for Claude 3
+        if hasattr(response, 'response'):
+            response_text = response.response
+        elif hasattr(response, 'message'):
+            response_text = response.message.content
+        else:
+            response_text = str(response)
+            
         logger.info(f"Extracted response text: {response_text}")
         
+        if not response_text:
+            logger.error("Empty response text extracted")
+            raise ValueError("Empty response from chat engine")
+            
         return ChatResponse(response=response_text)
 
     except Exception as e:
