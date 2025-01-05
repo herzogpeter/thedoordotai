@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
-logger.info(f"Starting application on port {os.getenv('PORT', '10000')}")
+logger.info("Starting application...")
 
 # Initialize settings
 Settings.llm = Anthropic(model="claude-3-5-sonnet-20241022")
