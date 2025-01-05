@@ -104,4 +104,4 @@ def build_index():
         sys.exit(1)
 
 if __name__ == "__main__":
-    build_index() 
+    build_index()
