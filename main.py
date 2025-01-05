@@ -98,11 +98,11 @@ async def chat(request: ChatRequest):
         logger.info(f"Raw response type: {type(response)}")
         logger.info(f"Raw response dict: {response.__dict__}")
         
-        # Claude 3 returns response in message.content
-        response_text = response.message.content
+        # Get response from AgentChatResponse
+        response_text = response.response
         logger.info(f"Extracted response text: {response_text}")
         
-        if not response_text:
+        if not response_text or response_text == "Empty Response":
             logger.error("Empty response text extracted")
             raise ValueError("Empty response from chat engine")
             
