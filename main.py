@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -33,8 +33,14 @@ class ChatRequest(BaseModel):
     message: str
     chat_history: Optional[list] = None
 
+class Source(BaseModel):
+    score: float
+    text: str
+    metadata: Optional[Dict[str, Any]] = None
+
 class ChatResponse(BaseModel):
     response: str
+    sources: Optional[List[Source]] = None
 
 @app.on_event("startup")
 async def startup_event():
@@ -63,7 +69,7 @@ async def startup_event():
         llm = Anthropic(model="claude-3-5-sonnet-20241022", temperature=0.7)
         logger.info(f"Initialized LLM with model: {llm.model}")
         chat_engine = index.as_chat_engine(
-            chat_mode="context",
+            chat_mode="condense_plus_context",
             llm=llm,
             verbose=True,
             system_prompt=(
@@ -96,15 +102,29 @@ async def chat(request: ChatRequest):
         logger.info(f"Raw response type: {type(response)}")
         logger.info(f"Raw response dict: {response.__dict__}")
         
-        # Get response from AgentChatResponse
+        # Get response text
         response_text = response.response
         logger.info(f"Extracted response text: {response_text}")
         
         if not response_text or response_text == "Empty Response":
             logger.error("Empty response text extracted")
             raise ValueError("Empty response from chat engine")
-            
-        return ChatResponse(response=response_text)
+        
+        # Extract and format sources
+        sources = []
+        if hasattr(response, 'source_nodes') and response.source_nodes:
+            for node in response.source_nodes:
+                sources.append(Source(
+                    score=float(node.score) if hasattr(node, 'score') else 0.0,
+                    text=node.node.text,
+                    metadata=node.node.metadata
+                ))
+            logger.info(f"Extracted {len(sources)} sources")
+        
+        return ChatResponse(
+            response=response_text,
+            sources=sources
+        )
 
     except Exception as e:
         logger.error(f"Error during chat: {str(e)}")
