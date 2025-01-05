@@ -1,18 +1,56 @@
 # Transcript Chat Application
 
-A production-ready, containerized application for chatting with transcripts using LlamaIndex and OpenAI. The application consists of a FastAPI backend for transcript processing and a Streamlit frontend for the chat interface.
+A production-ready, containerized application for chatting with transcripts using LlamaIndex and Anthropic's Claude. The application consists of a FastAPI backend for transcript processing and a Streamlit frontend for the chat interface.
 
 ## Architecture
 
-- **Backend**: FastAPI application using LlamaIndex and OpenAI for transcript processing
+- **Backend**: FastAPI application using LlamaIndex and Claude for transcript processing
 - **Frontend**: Streamlit-based chat interface
 - **Infrastructure**: Docker containers orchestrated with Docker Compose
+- **Vector Index**: Pre-built during Docker image creation for optimal performance
 
 ## Prerequisites
 
 - Docker Desktop installed and running (latest version)
-- OpenAI API key
+- Anthropic API key
 - (Optional) Account on your chosen cloud platform (AWS, Google Cloud, or DigitalOcean)
+
+## Transcript Indexing
+
+The application uses a pre-built vector index to enable efficient searching and querying of transcripts. This index is built during the Docker image creation process, not at runtime, which provides several benefits:
+
+1. **Faster Startup**: The application loads a pre-built index instead of creating it at runtime
+2. **Consistent Results**: Every deployment uses the same index
+3. **Build-time Validation**: The Docker build fails if indexing encounters errors
+
+### How Indexing Works
+
+1. Place your transcript files in the `transcripts/` directory
+2. During Docker build:
+   - `build_index.py` runs and processes all transcripts
+   - Creates embeddings using HuggingFace's sentence transformers
+   - Saves the index to the `storage/` directory
+   - Verifies index files exist before completing the build
+
+### Updating Transcripts
+
+When you need to update the transcripts:
+
+1. Add/modify files in the `transcripts/` directory
+2. Rebuild the Docker image:
+   ```bash
+   docker compose build --no-cache backend
+   docker compose up backend
+   ```
+
+### Local Development
+
+For local development without Docker:
+
+1. Create and activate a Python virtual environment
+2. Install dependencies: `pip install -r requirements.txt`
+3. Run the index builder: `python build_index.py`
+4. Start the backend: `uvicorn main:app --reload`
 
 ## Local Development
 
@@ -41,17 +79,19 @@ A production-ready, containerized application for chatting with transcripts usin
 ├── Dockerfile.frontend      # Frontend container configuration
 ├── docker-compose.yml      # Container orchestration
 ├── main.py                # FastAPI backend code
-├── streamlit_app.py       # Streamlit frontend code
-├── requirements.txt       # Python dependencies
-├── transcripts/          # Directory for transcript files
-├── storage/             # Persistent storage directory
-└── .env                # Environment variables
+├── build_index.py        # Script to build vector index
+├── streamlit_app.py      # Streamlit frontend code
+├── requirements.txt      # Python dependencies
+├── transcripts/         # Directory for transcript files
+├── storage/            # Vector index storage directory
+└── .env               # Environment variables
 ```
 
 ## Environment Variables
 
-- `OPENAI_API_KEY`: Your OpenAI API key (required)
+- `ANTHROPIC_API_KEY`: Your Anthropic API key (required)
 - `BACKEND_URL`: URL of the backend service (required for production deployment)
+- `PORT`: Port for the backend service (defaults to 10000)
 
 ## Production Deployment
 
@@ -135,7 +175,12 @@ Common issues and solutions:
    docker compose build --no-cache
    ```
 
-2. Connection issues:
+2. Index-related issues:
+   - Verify transcripts exist in `transcripts/` directory
+   - Check `storage/` directory for index files
+   - Review logs for indexing errors: `docker compose logs backend`
+
+3. Connection issues:
    - Verify environment variables
    - Check network connectivity
    - Ensure services are running
@@ -143,3 +188,47 @@ Common issues and solutions:
 ## License
 
 MIT License
+
+## Deployment on Render.com
+
+The application is configured for deployment on Render.com using `render.yaml`. To deploy:
+
+1. Push your code to a Git repository (GitHub, GitLab, etc.)
+2. Create a new account on [Render.com](https://render.com) if you haven't already
+3. Connect your Git repository to Render
+4. Click "New +" and select "Blueprint"
+5. Select your repository
+6. Render will automatically detect the `render.yaml` and create both services
+
+### Environment Variables
+
+The following environment variables need to be set in Render:
+
+Backend Service:
+- `ANTHROPIC_API_KEY`: Your Anthropic API key for Claude
+
+Frontend Service:
+- No additional variables needed (BACKEND_URL is pre-configured in render.yaml)
+
+### Build Process
+
+The backend service will:
+1. Install Python dependencies
+2. Run `build_index.py` to create the vector index
+3. Start the FastAPI server
+
+The frontend service will:
+1. Install Python dependencies
+2. Start the Streamlit application
+
+### Monitoring
+
+You can monitor both services in the Render dashboard. Each service has its own logs and metrics.
+
+### Local Development
+
+For local development:
+1. Create a `.env` file with your `ANTHROPIC_API_KEY`
+2. Run `python build_index.py` to create the index
+3. Start the backend: `uvicorn main:app --reload`
+4. Start the frontend: `streamlit run streamlit_app.py`

@@ -4,7 +4,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
 build/
 develop-eggs/
 dist/
@@ -20,19 +19,11 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# Virtual Environment
 venv/
-
-# Environment variables
-.env
-.env.local
-.env.prod
-.env.development
-.env.*
-!.env.*.template
-
-# Storage
-storage/*
-!storage/.gitkeep
+ENV/
+env/
 
 # IDE
 .idea/
@@ -40,6 +31,10 @@ storage/*
 *.swp
 *.swo
 
-# OS
+# macOS
 .DS_Store
-Thumbs.db 
+
+# Project specific
+storage/
+.env
+.env.* 

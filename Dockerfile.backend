@@ -1,30 +1,46 @@
 # Use Python slim image for smaller size
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
 
-# Install curl for healthcheck
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# Install curl for healthcheck and git for huggingface
+RUN apt-get update && \
+    apt-get install -y curl git && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
 COPY requirements.txt .
 
-# Install dependencies
+# Install PyTorch CPU version first
+RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+# Install other dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY main.py .
+# Install hf_transfer for faster model downloads
+RUN pip install --no-cache-dir hf_transfer
+
+# Copy application code and transcripts
+COPY main.py build_index.py ./
 COPY transcripts/ ./transcripts/
 
-# Create storage directory
-RUN mkdir -p ./storage
+# Build the index
+RUN python build_index.py
 
-# Set environment variable
+# Verify index files exist
+RUN test -f "storage/docstore.json" && \
+    test -f "storage/default__vector_store.json" && \
+    test -f "storage/index_store.json"
+
+# Set environment variables
+ENV PORT=10000
 ENV PYTHONUNBUFFERED=1
+ENV HF_HUB_ENABLE_HF_TRANSFER=1
+ENV ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
 
-# Expose port 8000 (Render will override with its own PORT)
-EXPOSE 8000
+# Expose the port
+EXPOSE ${PORT}
 
-# Command to run the application with Render's dynamic port
+# Command to run the application with dynamic port
 CMD uvicorn main:app --host 0.0.0.0 --port $PORT --log-level info

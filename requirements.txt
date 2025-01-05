@@ -1,9 +1,23 @@
-fastapi==0.109.2
-uvicorn==0.27.1
+# requirements.txt (example pinned versions)
+
+fastapi==0.115.6
+uvicorn==0.34.0
 python-dotenv==1.0.1
-llama-index-core
-llama-index-llms-anthropic
-llama-index-embeddings-huggingface
-llama-index-readers-file
-anthropic
+
+# LlamaIndex modules (all must agree on the same core range)
+llama-index-core==0.12.10
+llama-index-llms-anthropic==0.6.3
+llama-index-embeddings-huggingface==0.4.0
+llama-index-readers-file==0.4.2
+
+# Claude API
+anthropic==0.42.0
+
+# Natural Language Toolkit
+nltk==3.9.1
+
+# Sentence Transformers
 sentence-transformers==2.6.1
+
+# For Apple Silicon (M1/M2/M3) Macs, we'll install torch separately using:
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
