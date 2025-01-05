@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from llama_index.core import VectorStoreIndex, Settings
+from llama_index.core import VectorStoreIndex, Settings, load_index_from_storage
 from llama_index.core.storage.storage_context import StorageContext
 from llama_index.core.vector_stores import SimpleVectorStore
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
@@ -55,10 +55,7 @@ async def startup_event():
         # Load pre-built index
         logger.info("Loading pre-built index...")
         storage_context = StorageContext.from_defaults(persist_dir="storage")
-        index = VectorStoreIndex(
-            [],  # Empty documents list since we're loading from storage
-            storage_context=storage_context,
-        )
+        index = load_index_from_storage(storage_context)
         logger.info("Index loaded successfully")
 
         # Initialize chat engine with Anthropic
@@ -66,13 +63,14 @@ async def startup_event():
         llm = Anthropic(model="claude-3-5-sonnet-20241022", temperature=0.7)
         logger.info(f"Initialized LLM with model: {llm.model}")
         chat_engine = index.as_chat_engine(
-            chat_mode="condense_plus_context",
+            chat_mode="context",
             llm=llm,
             verbose=True,
             system_prompt=(
                 "You are a helpful AI assistant that answers questions about sermon transcripts. "
                 "Use the provided context to answer questions accurately and concisely. "
-                "If you're not sure about something, say so."
+                "If no context is relevant to the query, respond naturally as a helpful assistant. "
+                "For greetings and general conversation, respond in a friendly manner."
             )
         )
         logger.info("Chat engine initialized successfully")
