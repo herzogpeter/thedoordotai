@@ -65,7 +65,7 @@ async def startup_event():
         logger.info("Initializing chat engine...")
         chat_engine = index.as_chat_engine(
             chat_mode="condense_plus_context",
-            llm=Anthropic(model="claude-2"),
+            llm=Anthropic(model="claude-3-5-sonnet-20241022"),
             verbose=True,
         )
         logger.info("Chat engine initialized successfully")
@@ -87,7 +87,9 @@ async def chat(request: ChatRequest):
     try:
         # Get response from chat engine
         response = chat_engine.chat(request.message)
-        return ChatResponse(response=str(response))
+        # Extract the response content
+        response_text = response.response if hasattr(response, 'response') else str(response)
+        return ChatResponse(response=response_text)
 
     except Exception as e:
         logger.error(f"Error during chat: {str(e)}")
