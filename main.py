@@ -96,16 +96,10 @@ async def chat(request: ChatRequest):
         logger.info("Sending message to chat engine...")
         response = chat_engine.chat(request.message)
         logger.info(f"Raw response type: {type(response)}")
-        logger.info(f"Raw response: {response}")
+        logger.info(f"Raw response dict: {response.__dict__}")
         
-        # Extract the response content for Claude 3
-        if hasattr(response, 'response'):
-            response_text = response.response
-        elif hasattr(response, 'message'):
-            response_text = response.message.content
-        else:
-            response_text = str(response)
-            
+        # Claude 3 returns response in message.content
+        response_text = response.message.content
         logger.info(f"Extracted response text: {response_text}")
         
         if not response_text:
