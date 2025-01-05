@@ -37,4 +37,7 @@ env/
 # Project specific
 storage/
 .env
-.env.* 
+.env.*
+
+# Python version management
+.python-version 
