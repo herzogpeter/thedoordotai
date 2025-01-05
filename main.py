@@ -63,9 +63,11 @@ async def startup_event():
 
         # Initialize chat engine with Anthropic
         logger.info("Initializing chat engine...")
+        llm = Anthropic(model="claude-3-5-sonnet-20241022")
+        logger.info(f"Initialized LLM with model: {llm.model}")
         chat_engine = index.as_chat_engine(
             chat_mode="condense_plus_context",
-            llm=Anthropic(model="claude-3-5-sonnet-20241022"),
+            llm=llm,
             verbose=True,
         )
         logger.info("Chat engine initialized successfully")
@@ -86,13 +88,22 @@ async def chat(request: ChatRequest):
 
     try:
         # Get response from chat engine
+        logger.info("Sending message to chat engine...")
         response = chat_engine.chat(request.message)
+        logger.info(f"Raw response type: {type(response)}")
+        logger.info(f"Raw response: {response}")
+        
         # Extract the response content
         response_text = response.response if hasattr(response, 'response') else str(response)
+        logger.info(f"Extracted response text: {response_text}")
+        
         return ChatResponse(response=response_text)
 
     except Exception as e:
         logger.error(f"Error during chat: {str(e)}")
+        logger.error(f"Error type: {type(e)}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=500,
             detail=f"Error processing chat request: {str(e)}"
